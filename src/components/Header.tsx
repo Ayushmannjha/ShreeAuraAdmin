@@ -1,5 +1,6 @@
 import  { useState } from 'react';
 import { Menu, Search, Bell, User, LogOut, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // ShreeAuraAdminHeader.tsx
 // A responsive admin header component for "Shreeaura" built with React + TypeScript + TailwindCSS.
@@ -17,8 +18,15 @@ export default function ShreeAuraAdminHeader({
   onToggleSidebar,
 }: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const handleLogout = () => {
+    // replace with real logout flow
+    localStorage.removeItem("token");
+    navigate("/login");
+    console.log('logout clicked');
+  }
 console.log(searchOpen)
   return (
     <header className="w-full bg-white border-b shadow-sm">
@@ -130,13 +138,15 @@ console.log(searchOpen)
                   <div className="border-t my-1" />
                   <button
                     onClick={() => {
+                        handleLogout();
                       // replace with real logout flow
                       console.log('logout clicked');
                     }}
                     className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50"
                     role="menuitem"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4" 
+                    />
                     Logout
                   </button>
                 </div>
