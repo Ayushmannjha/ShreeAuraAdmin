@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { Menu, Search, Bell, User, LogOut, Settings } from 'lucide-react';
 
 // ShreeAuraAdminHeader.tsx
@@ -19,7 +19,7 @@ export default function ShreeAuraAdminHeader({
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-
+console.log(searchOpen)
   return (
     <header className="w-full bg-white border-b shadow-sm">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
