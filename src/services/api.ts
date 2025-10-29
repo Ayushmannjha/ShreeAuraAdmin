@@ -1,4 +1,4 @@
-export const api_base_url = "http://localhost:8080";
+export const api_base_url = "https://api.shreeaura.in";
 
 /* 🔐 Admin Login URL */
 export const adminLoginUrl = `${api_base_url}/auth/admin-login`;
