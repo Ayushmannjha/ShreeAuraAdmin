@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, Mail, Loader2 } from "lucide-react";
-import { adminLoginUrl } from "../services/api"; // ✅ make sure api file exports this
+import { adminLoginUrl } from "../services/api";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -9,6 +9,14 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  // ✅ Auto-redirect if token already exists
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      navigate("/"); // redirect to dashboard
+    }
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,9 +26,7 @@ export default function AdminLogin() {
     try {
       const response = await fetch(
         `${adminLoginUrl}?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
-        {
-          method: "POST",
-        }
+        { method: "POST" }
       );
 
       if (!response.ok) {
@@ -29,11 +35,9 @@ export default function AdminLogin() {
 
       const token = await response.text();
       localStorage.setItem("token", token);
-      const at= localStorage.getItem("adminToken");
-       // ✅ store Bearer token
-      console.log(token);
-      console.log(at)
-      navigate("/admin"); // ✅ redirect after login
+
+      console.log("✅ Token saved:", token);
+      navigate("/"); // redirect after login
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
@@ -49,10 +53,9 @@ export default function AdminLogin() {
         </h2>
 
         <form onSubmit={handleLogin} className="space-y-5">
+          {/* Email Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
               <input
@@ -66,10 +69,9 @@ export default function AdminLogin() {
             </div>
           </div>
 
+          {/* Password Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
               <input
@@ -83,22 +85,18 @@ export default function AdminLogin() {
             </div>
           </div>
 
+          {/* Error Message */}
           {error && (
-            <div className="text-red-600 text-sm font-medium text-center">
-              {error}
-            </div>
+            <div className="text-red-600 text-sm font-medium text-center">{error}</div>
           )}
 
+          {/* Login Button */}
           <button
             type="submit"
             disabled={loading}
             className="w-full flex justify-center items-center gap-2 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
           >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              "Login"
-            )}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Login"}
           </button>
         </form>
 

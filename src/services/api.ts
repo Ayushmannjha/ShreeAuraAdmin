@@ -49,13 +49,11 @@ export async function adminApi(
       : undefined,
   });
 
-  // ✅ Handle authentication failure
   if (response.status === 401 || response.status === 403) {
     localStorage.removeItem("token");
     throw new Error("Session expired. Please login again.");
   }
 
-  // ✅ Try parsing JSON safely
   let result: any;
   try {
     const text = await response.text();
@@ -64,7 +62,6 @@ export async function adminApi(
     result = null;
   }
 
-  // ✅ Handle non-OK
   if (!response.ok) {
     throw new Error(result?.message || result || `Error ${response.status}`);
   }
@@ -76,24 +73,18 @@ export async function adminApi(
    🧩 PRODUCT CATEGORY APIs
 ========================================================= */
 
-// ➤ Get all Product Categories
 export const getAllProductCategories = () =>
   adminApi("/admin/get-all-categories");
 
-// ➤ Save new Product Category
-export const saveProductCategory = (name: string) => {
-  console.log(name);
-  return adminApi(`/admin/save-ProductCategory?name=${encodeURIComponent(name)}`, "POST");
-};
+export const saveProductCategory = (name: string) =>
+  adminApi(`/admin/save-ProductCategory?name=${encodeURIComponent(name)}`, "POST");
 
-// ➤ Update Product Category
 export const updateProductCategory = (id: number, name: string) =>
   adminApi(
     `/admin/edit-productCategory?id=${id}&name=${encodeURIComponent(name)}`,
     "PUT"
   );
 
-// ➤ Delete Product Category
 export const deleteProductCategory = (id: number) =>
   adminApi(`/admin/delete-productCategory?id=${id}`, "DELETE");
 
@@ -101,11 +92,9 @@ export const deleteProductCategory = (id: number) =>
    🛍️ SHOP BY CATEGORY APIs
 ========================================================= */
 
-// ➤ Get all ShopByCategory
 export const getAllShopByCategory = () =>
   adminApi("/admin/get-all-shop-by-categories");
 
-// ➤ Save ShopByCategory (with image)
 export const saveShopByCategory = (file: File, name: string) => {
   const formData = new FormData();
   formData.append("file", file);
@@ -113,7 +102,6 @@ export const saveShopByCategory = (file: File, name: string) => {
   return adminApi("/admin/save-shopByCategory", "POST", formData, true);
 };
 
-// ➤ Update ShopByCategory
 export const updateShopByCategory = (
   id: number,
   name: string,
@@ -129,7 +117,6 @@ export const updateShopByCategory = (
   return adminApi(`/admin/edit-shopByCategory?id=${id}`, "PUT", formData, true);
 };
 
-// ➤ Delete ShopByCategory
 export const deleteShopByCategory = (id: number) =>
   adminApi(`/admin/delete-shopByCategory?id=${id}`, "DELETE");
 
@@ -137,9 +124,8 @@ export const deleteShopByCategory = (id: number) =>
    🏪 SHOP BY NAME APIs
 ========================================================= */
 
-// ➤ Get all ShopByName
 export const getAllShopByNames = () =>
-  adminApi("/admin/get-all-shop-by-name", "GET");
+  adminApi("/admin/get-all-shop-by-name");
 
 export const saveShopByName = (file: File, name: string) => {
   const formData = new FormData();
@@ -150,15 +136,80 @@ export const saveShopByName = (file: File, name: string) => {
 
 export const updateShopByName = (id: number, file: File | null, name: string) => {
   const formData = new FormData();
-if (file) formData.append("file", file);
-const updates = { name };
-formData.append(
-  "updates",
-  new Blob([JSON.stringify(updates)], { type: "application/json" })
-);
-return adminApi(`/admin/edit-shopByName?id=${id}`, "PUT", formData, true);
-
+  if (file) formData.append("file", file);
+  const updates = { name };
+  formData.append(
+    "updates",
+    new Blob([JSON.stringify(updates)], { type: "application/json" })
+  );
+  return adminApi(`/admin/edit-shopByName?id=${id}`, "PUT", formData, true);
 };
 
 export const deleteShopByName = (id: number) =>
   adminApi(`/admin/delete-shopByName?id=${id}`, "DELETE");
+
+/* =========================================================
+   📰 BLOG APIs
+========================================================= */
+
+export const getAllBlogs = () =>
+  adminApi("/admin/get-all-blogs");
+
+export const saveBlog = (file: File, title: string, description: string) => {
+  const formData = new FormData();
+  console.log(title);
+  console.log(description)
+  formData.append("file", file);
+  formData.append("title", title);
+  formData.append("description", description);
+
+  const blogData = { title, description };
+  formData.append(
+    "blog",
+    new Blob([JSON.stringify(blogData)], { type: "application/json" })
+  );
+  return adminApi("/admin/save-blog", "POST", formData, true);
+};
+
+export const updateBlog = (id: number, title: string, description: string, file?: File) => {
+  const formData = new FormData();
+  if (file) formData.append("file", file);
+  const updates = { title, description };
+  formData.append(
+    "updates",
+    new Blob([JSON.stringify(updates)], { type: "application/json" })
+  );
+  return adminApi(`/admin/edit-blog?id=${id}`, "PUT", formData, true);
+};
+
+export const deleteBlog = (id: number) =>
+  adminApi(`/admin/delete-blog?id=${id}`, "DELETE");
+
+/* =========================================================
+   📦 ORDERS & PAYMENTS APIs
+========================================================= */
+
+// ➤ Get all assigned orders
+export const getAllOrders = () => adminApi("/admin/get-all-orders");
+
+// ➤ Get payment details for a seller
+export const getSellerPaymentData = (sellerId: string) =>
+  adminApi(`/admin/get-payment-data?sellerId=${sellerId}`);
+
+// ➤ Send OTP to seller email for payment
+export const sendPaymentOtp = (sellerId: string, amount: number) =>
+  adminApi(`/admin/send-email-otp-for-payment?id=${sellerId}&amount=${amount}`, "POST");
+
+// ➤ Verify OTP before paying seller
+export const verifyPaymentOtp = (email: string, otp: string) =>
+  adminApi(`/admin/verify-email-otp-for-payment?email=${email}&otp=${otp}`, "POST");
+
+// ➤ Pay to seller
+export const payToSeller = (sellerId: string, amount: number) =>
+  adminApi(`/admin/pay-to-seller?id=${sellerId}&amount=${amount}`, "POST");
+
+// ➤ Receive payment from seller
+export const receiveFromSeller = (sellerId: string, amount: number) =>
+  adminApi(`/admin/get-from-seller?id=${sellerId}&amount=${amount}`, "POST");
+// ➤ Get all sellers
+export const getAllSellers = () => adminApi("/admin/get-all-seller");
