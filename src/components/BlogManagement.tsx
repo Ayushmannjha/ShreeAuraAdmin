@@ -208,19 +208,37 @@ export default function BlogManagement() {
               />
             </div>
 
-            <div className="relative">
+          <div className="relative">
   <label className="text-sm font-medium text-gray-700">Description</label>
   <div className="mt-1 max-h-48 overflow-y-auto border rounded-md">
     <Textarea
       name="description"
       rows={6}
       value={form.description}
-      onChange={handleChange}
+      onChange={(e) => {
+        const words = e.target.value.trim().split(/\s+/).filter(Boolean);
+        if (words.length <= 5000) {
+          handleChange(e); // your existing handler
+        }
+      }}
       placeholder="Enter blog content"
       className="border-0 w-full resize-none focus:ring-0"
     />
   </div>
+
+  {/* Word counter */}
+  <div className="text-xs text-gray-500 mt-1 text-right">
+    {form.description.trim().split(/\s+/).filter(Boolean).length} / 5000 words
+  </div>
+
+  {/* Optional: warning message when limit is reached */}
+  {form.description.trim().split(/\s+/).filter(Boolean).length >= 5000 && (
+    <p className="text-xs text-red-500 mt-1">
+      Word limit reached (5000 max)
+    </p>
+  )}
 </div>
+
 
 
             <div>
