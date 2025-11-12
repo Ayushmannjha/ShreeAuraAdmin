@@ -208,19 +208,20 @@ export default function BlogManagement() {
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <Textarea
-                name="description"
-                rows={4}
-                value={form.description}
-                onChange={handleChange}
-                placeholder="Enter blog content"
-                className="mt-1"
-              />
-            </div>
+            <div className="relative">
+  <label className="text-sm font-medium text-gray-700">Description</label>
+  <div className="mt-1 max-h-48 overflow-y-auto border rounded-md">
+    <Textarea
+      name="description"
+      rows={6}
+      value={form.description}
+      onChange={handleChange}
+      placeholder="Enter blog content"
+      className="border-0 w-full resize-none focus:ring-0"
+    />
+  </div>
+</div>
+
 
             <div>
               <label className="text-sm font-medium flex items-center gap-2 text-gray-700">

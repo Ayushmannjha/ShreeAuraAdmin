@@ -17,7 +17,7 @@ import BlogManagement from "./components/BlogManagement";
 import AdminOrders from "./components/AdminOrders";
 import AdminSellers from "./components/AdminSellers";
 import SellerPaymentPage from "./components/SellerPaymentPage";
-import { getDashboardData } from "./services/api";
+import { getDashboardData, getUsersData } from "./services/api";
 import { BarChart3, Users, Package, DollarSign } from "lucide-react";
 
 /* ===========================================
@@ -31,6 +31,8 @@ function Dashboard() {
     async function fetchDashboard() {
       try {
         const res = await getDashboardData();
+        const userData = await getUsersData();
+        console.log(userData);
         setData(res);
       } catch (error) {
         console.error("Error fetching dashboard:", error);

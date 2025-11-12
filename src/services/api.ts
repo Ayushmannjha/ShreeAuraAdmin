@@ -218,3 +218,5 @@ export const getAllSellers = () => adminApi("/admin/get-all-seller");
 ========================================================= */
 
 export const getDashboardData = () => adminApi("/admin/dashboard");
+
+export const getUsersData=()=>adminApi("/admin/users-data");
