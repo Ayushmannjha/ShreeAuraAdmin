@@ -39,7 +39,7 @@ export async function adminApi(
 
   if (!isFormData) headers["Content-Type"] = "application/json";
 
-  const response = await fetch(`http://api.shreeaura.in${endpoint}`, {
+  const response = await fetch(`https://api.shreeaura.in${endpoint}`, {
     method,
     headers,
     body: body
