@@ -39,7 +39,7 @@ export async function adminApi(
 
   if (!isFormData) headers["Content-Type"] = "application/json";
 
-  const response = await fetch(`https://api.shreeaura.in${endpoint}`, {
+  const response = await fetch(`http://api.shreeaura.in${endpoint}`, {
     method,
     headers,
     body: body
@@ -213,3 +213,8 @@ export const receiveFromSeller = (sellerId: string, amount: number) =>
   adminApi(`/admin/get-from-seller?id=${sellerId}&amount=${amount}`, "POST");
 // ➤ Get all sellers
 export const getAllSellers = () => adminApi("/admin/get-all-seller");
+/* =========================================================
+   📊 DASHBOARD API
+========================================================= */
+
+export const getDashboardData = () => adminApi("/admin/dashboard");

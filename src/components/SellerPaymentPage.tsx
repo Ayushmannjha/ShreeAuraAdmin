@@ -5,60 +5,73 @@ import {
   sendPaymentOtp,
   verifyPaymentOtp,
   payToSeller,
+  receiveFromSeller,
 } from "../services/api";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Loader2, Wallet, Mail, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Mail, CheckCircle2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-interface PaymentData {
-  sellerName: string;
-  sellerEmail: string;
-  totalEarnings: number;
-  pendingAmount: number;
-  lastPaymentDate?: string;
-  transactionHistory?: {
-    date: string;
-    amount: number;
-    type: string;
-    status: string;
-  }[];
+interface Seller {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+interface PaymentResponse {
+  id: number;
+  seller: Seller;
+  amountPayableToSeller: number;
+  amountReceivableFromSeller: number;
 }
 
 export default function SellerPaymentPage() {
   const { sellerId } = useParams();
-  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [paymentData, setPaymentData] = useState<PaymentResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [otpError, setOtpError] = useState<string>("");
+
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  const [payAmount, setPayAmount] = useState<number>(0);
+  const [receiveAmount, setReceiveAmount] = useState<number>(0);
+
+  if (!sellerId) return;
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const data = await getSellerPaymentData(sellerId);
+      setPaymentData(data);
+      setPayAmount(data.amountPayableToSeller);
+      setReceiveAmount(data.amountReceivableFromSeller);
+    } catch (err: any) {
+      toast.error("Failed to fetch payment data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchData() {
-      if (!sellerId) return;
-      try {
-        const data = await getSellerPaymentData(sellerId);
-        setPaymentData(data);
-      } catch (err: any) {
-        toast.error(err.message || "Failed to load payment data");
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchData();
   }, [sellerId]);
 
   const handleSendOtp = async () => {
-    if (!paymentData || !sellerId) return;
+    if (!sellerId) return;
     try {
+      setProcessing(true);
+      await sendPaymentOtp(sellerId, payAmount);
       setOtpSent(true);
-      await sendPaymentOtp(sellerId, paymentData.pendingAmount);
       toast.success("OTP sent to seller’s email");
-    } catch (err: any) {
-      setOtpSent(false);
-      toast.error(err.message || "Failed to send OTP");
+    } catch {
+      toast.error("Failed to send OTP");
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -66,151 +79,205 @@ export default function SellerPaymentPage() {
     if (!paymentData) return;
     try {
       setVerifying(true);
-      await verifyPaymentOtp(paymentData.sellerEmail, otp);
+      setOtpError("");
+      await verifyPaymentOtp(paymentData.seller.email, otp);
       setVerified(true);
-      toast.success("OTP verified successfully!");
-    } catch (err: any) {
-      toast.error(err.message || "Invalid OTP");
+      fetchData();
+    } catch {
+      setOtpError("Invalid or expired OTP. Please try again.");
     } finally {
       setVerifying(false);
     }
   };
 
   const handlePayToSeller = async () => {
-    if (!paymentData || !sellerId) return;
+    if (!sellerId || payAmount <= 0) return toast.error("Enter valid amount");
     try {
-      await payToSeller(sellerId, paymentData.pendingAmount);
-      toast.success("Payment sent successfully!");
-      setVerified(false);
-      setOtpSent(false);
-      setOtp("");
-    } catch (err: any) {
-      toast.error(err.message || "Payment failed");
+      setProcessing(true);
+      await payToSeller(sellerId, payAmount);
+      toast.success(`Paid ₹${payAmount.toFixed(2)} to seller`);
+      resetOtpState();
+      fetchData();
+    } catch {
+      toast.error("Payment failed");
+    } finally {
+      setProcessing(false);
     }
+  };
+
+  const handleReceiveFromSeller = async () => {
+    if (!sellerId || receiveAmount <= 0)
+      return toast.error("Enter valid amount");
+    try {
+      setProcessing(true);
+      await receiveFromSeller(sellerId, receiveAmount);
+      toast.success(`Received ₹${receiveAmount.toFixed(2)} from seller`);
+      fetchData();
+    } catch {
+      toast.error("Failed to receive payment");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const resetOtpState = () => {
+    setOtp("");
+    setOtpSent(false);
+    setVerified(false);
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[80vh]">
-        <Loader2 className="animate-spin w-8 h-8 text-muted-foreground" />
+      <div className="flex justify-center items-center h-[70vh]">
+        <Loader2 className="animate-spin h-8 w-8 text-gray-500" />
       </div>
     );
   }
 
   if (!paymentData) {
     return (
-      <div className="text-center text-muted-foreground mt-10">
-        No payment data found for this seller.
+      <div className="text-center text-gray-500 mt-10">
+        No payment data available.
       </div>
     );
   }
 
-  return (
-    <div className="p-6 space-y-6">
-      <Card className="p-4 shadow-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5" /> Seller Payment Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div><strong>Seller Name:</strong> {paymentData.sellerName}</div>
-          <div><strong>Email:</strong> {paymentData.sellerEmail}</div>
-          <div><strong>Total Earnings:</strong> ₹{paymentData.totalEarnings}</div>
-          <div><strong>Pending Amount:</strong> ₹{paymentData.pendingAmount}</div>
-          <div>
-            <strong>Last Payment:</strong>{" "}
-            {paymentData.lastPaymentDate
-              ? new Date(paymentData.lastPaymentDate).toLocaleDateString()
-              : "N/A"}
-          </div>
+  const { seller, amountPayableToSeller, amountReceivableFromSeller } =
+    paymentData;
 
-          <div className="pt-4 flex gap-2 flex-wrap">
+  return (
+    <div className="relative max-w-md mx-auto p-6 space-y-4">
+      {/* 🔄 Full-page overlay loader */}
+      {(processing || verifying) && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm z-50">
+          <Loader2 className="animate-spin h-10 w-10 text-indigo-600" />
+        </div>
+      )}
+
+      {/* Seller Info Card */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Seller Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p>
+            <span className="text-gray-500">Seller Name: </span>
+            {seller.name}
+          </p>
+          <p>
+            <span className="text-gray-500">Seller Email: </span>
+            {seller.email}
+          </p>
+          <p>
+            <span className="text-gray-500">Total Payable: </span>₹
+            {amountPayableToSeller.toFixed(2)}
+          </p>
+          <p>
+            <span className="text-gray-500">Total Receivable: </span>₹
+            {amountReceivableFromSeller.toFixed(2)}
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Payment Actions */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Payment Actions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Pay to Seller */}
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Pay to Seller</label>
+            <Input
+              type="number"
+              min={1}
+              max={amountPayableToSeller}
+              value={payAmount}
+              onChange={(e) => setPayAmount(Number(e.target.value))}
+              placeholder="Enter amount"
+            />
+
             {!otpSent && (
-              <Button onClick={handleSendOtp}>Send OTP to Seller</Button>
+              <Button
+                onClick={handleSendOtp}
+                className="w-full mt-2 bg-indigo-600 hover:bg-indigo-700"
+              >
+                Send OTP
+              </Button>
             )}
 
             {otpSent && !verified && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col mt-2 gap-2">
                 <Input
                   placeholder="Enter OTP"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
-                  className="w-32"
                 />
                 <Button
                   onClick={handleVerifyOtp}
                   disabled={verifying}
                   variant="secondary"
                 >
-                  {verifying ? "Verifying..." : "Verify"}
+                  {verifying ? "Verifying..." : "Verify OTP"}
                 </Button>
               </div>
             )}
 
             {verified && (
-              <Button onClick={handlePayToSeller} variant="default">
-                Pay ₹{paymentData.pendingAmount} to Seller
+              <Button
+                onClick={handlePayToSeller}
+                disabled={processing}
+                className="w-full mt-2 bg-green-600 hover:bg-green-700"
+              >
+                {processing ? (
+                  <RefreshCw className="animate-spin h-4 w-4 mr-2" />
+                ) : null}
+                Pay ₹{payAmount.toFixed(2)}
               </Button>
+            )}
+
+            {otpSent && (
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                {verified ? (
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                ) : (
+                  <Mail className="h-3 w-3 text-indigo-500" />
+                )}
+                {verified ? "OTP Verified" : "OTP sent to seller’s email"}
+              </p>
+            )}
+
+            {otpError && (
+              <p className="text-red-500 text-xs mt-1">{otpError}</p>
             )}
           </div>
 
-          {otpSent && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-              {verified ? (
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-              ) : (
-                <Mail className="h-4 w-4" />
-              )}
-              {verified ? "OTP Verified" : "OTP sent to seller's email"}
-            </div>
-          )}
+          {/* Receive from Seller */}
+          <div className="mt-4">
+            <label className="block text-sm text-gray-600 mb-1">
+              Receive from Seller
+            </label>
+            <Input
+              type="number"
+              min={1}
+              max={amountReceivableFromSeller}
+              value={receiveAmount}
+              onChange={(e) => setReceiveAmount(Number(e.target.value))}
+              placeholder="Enter amount"
+            />
+            <Button
+              onClick={handleReceiveFromSeller}
+              disabled={processing}
+              className="w-full mt-2 bg-green-600 hover:bg-green-700"
+            >
+              {processing ? (
+                <RefreshCw className="animate-spin h-4 w-4 mr-2" />
+              ) : null}
+              Receive ₹{receiveAmount.toFixed(2)}
+            </Button>
+          </div>
         </CardContent>
       </Card>
-
-      {/* 💳 Transaction History */}
-      {paymentData.transactionHistory?.length ? (
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="p-2">Date</th>
-                    <th className="p-2">Amount</th>
-                    <th className="p-2">Type</th>
-                    <th className="p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paymentData.transactionHistory.map((tx, i) => (
-                    <tr key={i} className="border-b hover:bg-muted/30 transition">
-                      <td className="p-2">{new Date(tx.date).toLocaleDateString()}</td>
-                      <td className="p-2">₹{tx.amount}</td>
-                      <td className="p-2">{tx.type}</td>
-                      <td className="p-2 flex items-center gap-1">
-                        {tx.status === "SUCCESS" ? (
-                          <CheckCircle2 className="text-green-500 h-4 w-4" />
-                        ) : (
-                          <XCircle className="text-red-500 h-4 w-4" />
-                        )}
-                        {tx.status}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <p className="text-muted-foreground text-center text-sm">
-          No transactions yet.
-        </p>
-      )}
     </div>
   );
 }

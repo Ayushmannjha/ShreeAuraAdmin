@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import reactLogo from "./assets/react.svg";
+import { motion } from "motion/react";
+
 import viteLogo from "/vite.svg";
 import "./App.css";
 import ShreeAuraAdminHeader from "./components/Header";
@@ -16,24 +17,137 @@ import BlogManagement from "./components/BlogManagement";
 import AdminOrders from "./components/AdminOrders";
 import AdminSellers from "./components/AdminSellers";
 import SellerPaymentPage from "./components/SellerPaymentPage";
+import { getDashboardData } from "./services/api";
+import { BarChart3, Users, Package, DollarSign } from "lucide-react";
 
+/* ===========================================
+   🧩 DASHBOARD COMPONENT
+=========================================== */
 function Dashboard() {
-  return (
-    <div>
-      <h1 className="text-3xl font-semibold mb-4">
-        Welcome to ShreeAura Admin
-      </h1>
-      <p className="text-gray-600 mb-8">
-        Use the sidebar to manage categories, products, and more.
-      </p>
-      <div className="flex justify-center gap-8">
-        <img src={viteLogo} className="logo" alt="Vite logo" />
-        <img src={reactLogo} className="logo react" alt="React logo" />
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const res = await getDashboardData();
+        setData(res);
+      } catch (error) {
+        console.error("Error fetching dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDashboard();
+  }, []);
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-full">
+        <motion.div
+          className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+        />
       </div>
+    );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-8">
+      <motion.h1
+        className="text-4xl font-bold text-indigo-700 mb-2"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        ShreeAura Admin Dashboard
+      </motion.h1>
+      <motion.p
+        className="text-gray-600 mb-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        Overview of platform performance and key metrics
+      </motion.p>
+
+      {/* Dashboard Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl border border-indigo-100 flex flex-col items-center"
+        >
+          <div className="bg-indigo-100 p-3 rounded-full mb-3">
+            <Users className="w-6 h-6 text-indigo-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-700">Total Sellers</h3>
+          <p className="text-2xl font-bold text-indigo-700 mt-1">
+            {data["total-seller"]}
+          </p>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl border border-indigo-100 flex flex-col items-center"
+        >
+          <div className="bg-purple-100 p-3 rounded-full mb-3">
+            <Users className="w-6 h-6 text-purple-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-700">Total Customers</h3>
+          <p className="text-2xl font-bold text-purple-700 mt-1">
+            {data["total-costumers"]}
+          </p>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl border border-indigo-100 flex flex-col items-center"
+        >
+          <div className="bg-green-100 p-3 rounded-full mb-3">
+            <Package className="w-6 h-6 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-700">Total Products</h3>
+          <p className="text-2xl font-bold text-green-700 mt-1">
+            {data["total-products"]}
+          </p>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl border border-indigo-100 flex flex-col items-center"
+        >
+          <div className="bg-yellow-100 p-3 rounded-full mb-3">
+            <DollarSign className="w-6 h-6 text-yellow-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-700">Revenue</h3>
+          <p className="text-2xl font-bold text-yellow-700 mt-1">
+            ₹{data["revenue"].toFixed(2)}
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Chart Placeholder */}
+      <motion.div
+        className="mt-12 bg-white rounded-2xl shadow-md border border-indigo-100 p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="flex items-center mb-4">
+          <BarChart3 className="w-5 h-5 text-indigo-600 mr-2" />
+          <h2 className="text-xl font-semibold text-gray-700">Revenue Trend</h2>
+        </div>
+        <div className="h-56 flex items-center justify-center text-gray-400">
+          (Chart visualization coming soon)
+        </div>
+      </motion.div>
     </div>
   );
 }
 
+/* ===========================================
+   🧩 MAIN APP COMPONENT
+=========================================== */
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -152,15 +266,20 @@ function App() {
 
                   <main className="flex-1 overflow-auto p-6 text-center">
                     <Routes>
-                      <Route path="/admin/payments/:sellerId" element={<SellerPaymentPage />} />
-
+                      <Route
+                        path="/admin/payments/:sellerId"
+                        element={<SellerPaymentPage />}
+                      />
                       <Route path="/" element={<Dashboard />} />
-                      <Route path="/seller" element={<AdminSellers/>}/>
-                      <Route path="/admin-orders" element={<AdminOrders/>}></Route>
-                      <Route path="/blog" element={<BlogManagement/>}/>
+                      <Route path="/seller" element={<AdminSellers />} />
+                      <Route path="/admin-orders" element={<AdminOrders />} />
+                      <Route path="/blog" element={<BlogManagement />} />
                       <Route path="/category" element={<AddCategory />} />
                       <Route path="/shopbyname" element={<ShopByNamePage />} />
-                      <Route path="/shopbycategory" element={<ShopByCategoryPage />} />
+                      <Route
+                        path="/shopbycategory"
+                        element={<ShopByCategoryPage />}
+                      />
                     </Routes>
                   </main>
                 </div>
